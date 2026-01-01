@@ -1,0 +1,220 @@
+#define F_CPU 8000000UL
+#include <avr/io.h>
+#include <avr/eeprom.h>
+#include <util/delay.h>
+#include <util/twi.h>
+#include <stdio.h>
+
+/* ================= I2C ================= */
+#define LCD_ADDR 0x27
+#define RTC_ADDR 0x68
+
+#define LCD_RS  0x01
+#define LCD_EN  0x04
+#define LCD_BL  0x08
+
+uint8_t EEMEM rtc_init_flag;
+
+/* ================= TWI ================= */
+void TWI_Init(void) {
+	TWSR = 0x00;
+	TWBR = 32;
+	TWCR = (1<<TWEN);
+}
+
+void TWI_Start(void) {
+	TWCR = (1<<TWINT)|(1<<TWSTA)|(1<<TWEN);
+	while (!(TWCR & (1<<TWINT)));
+}
+
+void TWI_Stop(void) {
+	TWCR = (1<<TWINT)|(1<<TWEN)|(1<<TWSTO);
+}
+
+void TWI_Write(uint8_t data) {
+	TWDR = data;
+	TWCR = (1<<TWINT)|(1<<TWEN);
+	while (!(TWCR & (1<<TWINT)));
+}
+
+uint8_t TWI_Read_ACK(void) {
+	TWCR = (1<<TWINT)|(1<<TWEN)|(1<<TWEA);
+	while (!(TWCR & (1<<TWINT)));
+	return TWDR;
+}
+
+uint8_t TWI_Read_NACK(void) {
+	TWCR = (1<<TWINT)|(1<<TWEN);
+	while (!(TWCR & (1<<TWINT)));
+	return TWDR;
+}
+
+/* ================= RTC ================= */
+uint8_t bcd_to_dec(uint8_t bcd) {
+	return ((bcd >> 4) * 10) + (bcd & 0x0F);
+}
+
+uint8_t dec_to_bcd(uint8_t dec) {
+	return ((dec / 10) << 4) | (dec % 10);
+}
+
+void RTC_Read(uint8_t *h, uint8_t *m, uint8_t *s) {
+	TWI_Start();
+	TWI_Write(RTC_ADDR << 1);
+	TWI_Write(0x00);
+	TWI_Start();
+	TWI_Write((RTC_ADDR << 1) | 1);
+
+	*s = bcd_to_dec(TWI_Read_ACK());
+	*m = bcd_to_dec(TWI_Read_ACK());
+	*h = bcd_to_dec(TWI_Read_NACK());
+
+	TWI_Stop();
+}
+
+void RTC_Set(uint8_t h, uint8_t m, uint8_t s) {
+	TWI_Start();
+	TWI_Write(RTC_ADDR << 1);
+	TWI_Write(0x00);
+	TWI_Write(dec_to_bcd(s));
+	TWI_Write(dec_to_bcd(m));
+	TWI_Write(dec_to_bcd(h));
+	TWI_Stop();
+}
+
+/* ================= LCD ================= */
+void LCD_Write(uint8_t data) {
+	TWI_Start();
+	TWI_Write(LCD_ADDR << 1);
+	TWI_Write(data | LCD_BL);
+	TWI_Stop();
+}
+
+void LCD_Pulse(uint8_t data) {
+	LCD_Write(data | LCD_EN);
+	_delay_us(1);
+	LCD_Write(data & ~LCD_EN);
+	_delay_us(50);
+}
+
+void LCD_Send4(uint8_t nibble) {
+	LCD_Pulse(nibble);
+}
+
+void LCD_Command(uint8_t cmd) {
+	LCD_Send4(cmd & 0xF0);
+	LCD_Send4((cmd << 4) & 0xF0);
+	_delay_ms(2);
+}
+
+void LCD_Data(uint8_t data) {
+	LCD_Send4((data & 0xF0) | LCD_RS);
+	LCD_Send4(((data << 4) & 0xF0) | LCD_RS);
+}
+
+void LCD_Print(char *str) {
+	while (*str)
+	LCD_Data(*str++);
+}
+
+void LCD_Init(void) {
+	_delay_ms(50);
+	LCD_Send4(0x30);
+	LCD_Send4(0x30);
+	LCD_Send4(0x30);
+	LCD_Send4(0x20);
+
+	LCD_Command(0x28);
+	LCD_Command(0x0C);
+	LCD_Command(0x01);
+}
+
+/* ================= ADC ================= */
+void ADC_Init(void) {
+	DDRA &= ~(1<<PA0);
+	ADMUX = (1<<REFS0);
+	ADCSRA = (1<<ADEN)|(1<<ADPS2)|(1<<ADPS1);
+}
+
+uint16_t ADC_Read(void) {
+	ADCSRA |= (1<<ADSC);
+	while (ADCSRA & (1<<ADSC));
+	return ADC;
+}
+
+/* ================= PWM ================= */
+void PWM_Init(void) {
+	DDRD |= (1<<PD7);
+	TCCR2 = (1<<WGM20)|(1<<WGM21)|(1<<COM21)|(1<<CS21);
+}
+
+void PWM_Set(uint8_t duty) {
+	OCR2 = duty;
+}
+
+/* ================= MAIN ================= */
+int main(void)
+{
+	char buf[17];
+	uint8_t h, m, s;
+
+	TWI_Init();
+	LCD_Init();
+	ADC_Init();
+	PWM_Init();
+
+	/* ===== ESP INTERFACE ===== */
+	DDRD &= ~(1 << PD3);   // PD3 INPUT  (ENABLE from ESP)
+	DDRD |=  (1 << PD4);   // PD4 OUTPUT (STATUS to ESP)
+
+	PORTD |= (1 << PD3);   // Pull-up ? system ON if ESP disconnected
+	PORTD &= ~(1 << PD4);  // Default DAY
+
+	if (eeprom_read_byte(&rtc_init_flag) != 0xA5)
+	{
+		RTC_Set(20, 26, 25);
+		eeprom_write_byte(&rtc_init_flag, 0xA5);
+	}
+
+	LCD_Command(0x80);
+	LCD_Print("Street Light");
+
+	while (1)
+	{
+		//ENABLE CHECK 
+		if (PIND & (1 << PD3))   // HIGH = disabled
+		{
+			PWM_Set(0);
+			PORTD &= ~(1 << PD4);
+			LCD_Command(0xC0);
+			LCD_Print("System OFF       ");
+			_delay_ms(200);
+			continue;
+		}
+
+		/* ===== NORMAL OPERATION ===== */
+		uint16_t ldr = ADC_Read();
+		RTC_Read(&h, &m, &s);
+
+		LCD_Command(0xC0);
+
+		if (ldr < 300) {                  // NIGHT
+			PWM_Set(255);
+			PORTD |= (1 << PD4);
+			sprintf(buf,"%02d:%02d:%02d Night", h, m, s);
+		}
+		else if (ldr < 700) {             // DIM
+			PWM_Set(90);
+			PORTD &= ~(1 << PD4);
+			sprintf(buf,"%02d:%02d:%02d Dim  ", h, m, s);
+		}
+		else {                            // DAY
+			PWM_Set(0);
+			PORTD &= ~(1 << PD4);
+			sprintf(buf,"%02d:%02d:%02d Day  ", h, m, s);
+		}
+
+		LCD_Print(buf);
+		_delay_ms(120);
+	}
+}
