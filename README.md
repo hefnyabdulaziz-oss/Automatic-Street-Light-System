@@ -1,148 +1,131 @@
-Automatic Street Light System (Embedded & IoT)
-Overview
 
-This project presents the design and implementation of an Automatic Street Light System that intelligently controls street lighting based on ambient light conditions and time scheduling, with optional IoT connectivity for monitoring and control. The system is designed to reduce power consumption while ensuring reliable illumination during night hours, making it suitable for smart city and energy-efficient infrastructure applications.
+# Automatic Street Light System
 
-The project was developed as part of an Embedded Real-Time Systems course, focusing on practical embedded design, sensor interfacing, and system-level integration.
+## 📌 Overview
 
-Problem Statement
+The **Automatic Street Light System** is an embedded and IoT-based project designed to control street lighting intelligently based on **ambient light conditions** and **time scheduling**. The system reduces energy consumption by automatically switching and dimming lights while maintaining reliable illumination during night hours.
 
-Traditional street lighting systems operate manually or remain ON for long periods regardless of actual lighting needs. This leads to:
+This project demonstrates practical embedded systems concepts including **sensor interfacing, PWM control, real-time clock integration, and IoT communication**, making it suitable for **smart city applications**.
 
-Unnecessary energy consumption
+---
 
-Increased operational costs
+## ❓ Problem Statement
 
-Reduced lamp lifetime
+Conventional street lighting systems operate manually or remain ON regardless of environmental conditions, resulting in:
 
-The goal of this project is to automate street lighting, ensuring lights operate only when needed and at appropriate brightness levels, while enabling future scalability through IoT.
+* High energy consumption
+* Increased maintenance costs
+* Reduced lamp lifetime
 
-System Objectives
+This project aims to automate street lighting to ensure **efficient, reliable, and smart control**.
 
-Automatically detect day and night conditions
+---
 
-Adjust light intensity dynamically to save energy
+## 🎯 Project Objectives
 
-Maintain accurate time-based control
+* Automatically detect day and night conditions
+* Adjust light intensity dynamically using PWM
+* Maintain accurate time-based operation
+* Enable remote monitoring through IoT
+* Improve energy efficiency and scalability
 
-Provide real-time system status locally and remotely
+---
 
-Demonstrate a scalable smart lighting solution
+## 🧠 System Architecture
 
-System Architecture
+The system is centered around an **ATmega32 microcontroller**, which processes sensor data and controls lighting behavior.
 
-The system is built around an ATmega32 microcontroller, which acts as the central controller and interfaces with multiple peripherals:
+**Main components:**
 
-LDR Sensor: Measures ambient light intensity
+* LDR sensor for ambient light detection
+* RTC (DS3231) for accurate timekeeping
+* LED / street lamp model
+* PWM for brightness control
+* ESP8266 Wi-Fi module for IoT connectivity
+* 16×2 I²C LCD for local status display
 
-RTC (DS3231): Provides accurate timekeeping for scheduling
+---
 
-LED / Street Lamp Model: Represents street lighting
+## ⚙️ Operating Modes
 
-PWM Control: Adjusts brightness levels smoothly
+| Mode       | Condition           | Behavior           |
+| ---------- | ------------------- | ------------------ |
+| Day Mode   | High ambient light  | Lights OFF         |
+| Dim Mode   | Low light (evening) | Reduced brightness |
+| Night Mode | Very low light      | Full brightness    |
 
-ESP8266 Wi-Fi Module: Enables IoT connectivity
+Mode selection is based on **LDR readings combined with RTC time**.
 
-16×2 I²C LCD: Displays system status, time, and operating mode
+---
 
-Operating Modes
+## 🧩 Hardware Components
 
-The system operates in three main modes:
+* ATmega32 Microcontroller
+* LDR (Light Dependent Resistor)
+* RTC DS3231
+* ESP8266 Wi-Fi Module
+* 16×2 I²C LCD
+* LEDs / street light model
+* Supporting resistors and circuitry
 
-Day Mode
+---
 
-Ambient light is high
+## 💻 Software Implementation
 
-Street lights are turned OFF
+* Language: **Embedded C**
+* ADC for reading LDR values
+* PWM for LED brightness control
+* I²C for RTC and LCD communication
+* UART for ESP8266 communication
+* Modular firmware design for scalability
 
-Dim Mode
+---
 
-Low ambient light (evening)
+## 🌐 IoT Features
 
-Lights operate at reduced brightness using PWM
+* Remote monitoring of lighting status
+* Real-time visualization of operating mode
+* Cloud-ready architecture
+* Support for future manual override and logging
 
-Night Mode
+---
 
-Very low ambient light (night)
+## 🔋 Power Efficiency
 
-Lights operate at full brightness
+* Power consumption analysis for each mode
+* Energy savings compared to traditional systems
+* Battery life estimation for off-grid deployment
 
-Mode selection is based on LDR readings combined with RTC time, ensuring reliable operation even in varying weather conditions.
+---
 
-Hardware Components
+## 🏙️ Applications
 
-ATmega32 Microcontroller
+* Smart city street lighting
+* Campuses and residential roads
+* Parking areas and walkways
+* Energy-efficient public infrastructure
 
-LDR (Light Dependent Resistor)
+---
 
-RTC DS3231
+## 🚀 Future Enhancements
 
-ESP8266 Wi-Fi Module
+* Motion-based adaptive lighting
+* Solar panel integration
+* Mobile application control
+* Centralized cloud dashboard
+* AI-based brightness optimization
 
-16×2 LCD with I²C Interface
+---
 
-LEDs / Street Light Model
+## ✅ Conclusion
 
-Resistors, transistors, and supporting circuitry
+This project provides a complete **smart street lighting solution** by integrating embedded hardware, real-time control, and IoT communication. It showcases practical engineering skills while addressing real-world energy efficiency challenges.
 
-Software Implementation
+---
 
-Embedded C is used for firmware development
+## 🛠️ Technologies Used
 
-ADC is used to read LDR values
-
-PWM is used for brightness control
-
-I²C communication is used for RTC and LCD
-
-UART is used to communicate with the ESP8266
-
-System logic handles mode switching, time validation, and data display
-
-IoT Features
-
-Using the ESP8266 module, the system supports:
-
-Remote monitoring of light status
-
-Time and mode visualization via cloud/dashboard
-
-Potential manual override and data logging
-
-Future integration with smart city platforms
-
-Power Efficiency & Analysis
-
-The project includes:
-
-Power consumption calculations for each operating mode
-
-Estimated energy savings compared to traditional systems
-
-Battery life estimation for off-grid scenarios
-
-Applications
-
-Smart city street lighting
-
-Campus and residential roads
-
-Parking areas and pathways
-
-Energy-efficient public infrastructure
-
-Future Enhancements
-
-Motion detection for adaptive lighting
-
-Solar panel integration
-
-Mobile application control
-
-Centralized cloud dashboard
-
-AI-based adaptive brightness control
-
-Conclusion
-
-This project demonstrates a complete embedded and IoT-based smart street lighting solution, combining hardware design, firmware development, and system optimization. It highlights practical embedded engineering skills while addressing real-world energy efficiency challenges.
+* ATmega32
+* ESP8266
+* Embedded C
+* ADC, PWM, UART, I²C
